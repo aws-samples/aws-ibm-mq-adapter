@@ -1,0 +1,54 @@
+{
+  "compilerOptions": {
+    /* Basic */
+    "target": "ES2018",
+    "module": "CommonJS",
+    "lib": [
+      "es2018"
+    ],
+    "resolveJsonModule": true,
+    "inlineSourceMap": true,
+    "newLine": "lf",
+    "declaration": true,
+    /* Strict Type-Checking Options */
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noImplicitReturns": true,
+    /* Module Resolution Options */
+    "moduleResolution": "node",
+    "baseUrl": "./packages",
+    "paths": {
+      "@fastpath/*": [
+        "*/src"
+      ]
+    },
+    "typeRoots": [
+      "node_modules/@types"
+    ],
+    "types": [
+      "node",
+      "jest"
+    ],
+    "charset": "utf8",
+    "esModuleInterop": true,
+    /* Source Map Options */
+    "inlineSources": true,
+    /* Experimental Options */
+    "experimentalDecorators": true
+  },
+  "include": [
+    "**/*.ts"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/dist",
+    "**/cdk.out",
+    "*.js"
+  ]
+}

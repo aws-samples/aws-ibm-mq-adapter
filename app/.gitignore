@@ -1,0 +1,8 @@
+*.crt
+*.key
+*.jks
+out/*
+.idea/*
+dependency-reduced-pom.xml
+*.iml
+target/*

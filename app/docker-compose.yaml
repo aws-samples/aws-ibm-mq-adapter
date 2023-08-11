@@ -1,0 +1,31 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+version: "3.2"
+services:
+  ibm-mq-mock:
+    container_name: ibm-mq
+    build:
+      context: ../mock/
+    ports:
+      - 9443:9443
+      - 1414:1414
+    environment:
+     LICENSE: accept
+     MQ_QMGR_NAME: QM1 
+     AWS_PROFILE: ${AWS_PROFILE}
+    volumes:
+      - ~/.aws/:/.aws:ro
+  mq-adapter:
+    container_name: mq-adapter
+    network_mode: "host"
+    build:
+      context: ./
+    environment:
+      AWS_PROFILE: ${AWS_PROFILE}
+      ssl.keystore.password.secure: password
+      ssl.truststore.password.secure: trustpassword
+      ibm.hostName: localhost
+
+    volumes:
+      - ~/.aws/:/home/appuser/.aws:ro

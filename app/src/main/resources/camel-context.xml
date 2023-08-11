@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+             xmlns:camel="http://camel.apache.org/schema/spring"
+             xmlns:context="http://www.springframework.org/schema/context"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="
+         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+         http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd
+         http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+
+   <context:property-placeholder location="classpath:/broker-${PROFILE}.properties" />
+
+   <bean id="SSLConfiguration" class="com.amazonaws.samples.SSLConfiguration">
+      <property name="keystore" value="${ssl.keystore}" />
+      <property name="keystorePassword" value="${KEYSTORE_PASSWORD}" />
+      <property name="keystoreType" value="${ssl.key-store-type}" />
+      <property name="truststore" value="${ssl.truststore}" />
+      <property name="truststorePassword" value="${TRUSTSTORE_PASSWORD}" />
+      <property name="cipherSuite" value="${ibm.ciphersuite}" />
+      <property name="protocols" value="${ibm.protocols}" />
+   </bean>
+
+   <bean id="connectionFactoryConfig" class="org.apache.camel.component.jms.JmsConfiguration">
+      <property name="connectionFactory" ref="secureConnectionFactory" />
+      <property name="concurrentConsumers" value="${ibm.concurrentConsumers}" />
+      <property name="maxConcurrentConsumers" value="${ibm.maxConcurrentConsumers}" />
+      <property name="maxMessagesPerTask" value="${ibm.maxMessagesPerTask}" />
+      <property name="receiveTimeout" value="${ibm.receiveTimeout}" />
+      <property name="idleConsumerLimit" value="${ibm.idleConsumerLimit}" />
+   </bean>
+
+   <bean id="mqConnectionFactory" class="com.ibm.mq.jms.MQQueueConnectionFactory">
+      <property name="hostName" value="${IBM_HOSTNAME}" />
+      <property name="port" value="${ibm.port}" />
+      <property name="queueManager" value="${IBMMQ_QUEUE_MANAGER}" />
+      <property name="channel" value="${IBMMQ_CHANNEL}" />
+      <property name="transportType" value="#{T(com.ibm.msg.client.wmq.WMQConstants).WMQ_CM_CLIENT}" />
+      <property name="SSLCipherSuite" value="${ibm.ciphersuite}" />
+      <property name="SSLSocketFactory" value="#{SSLConfiguration.SSLSocketFactory}" />
+   </bean>
+
+   <bean id="ibmMQ" class="org.apache.camel.component.jms.JmsComponent">
+      <property name="configuration" ref="connectionFactoryConfig" />
+   </bean>
+   
+   <bean id="secureConnectionFactory" class="org.springframework.jms.connection.UserCredentialsConnectionFactoryAdapter">
+      <property name="targetConnectionFactory" ref="mqConnectionFactory" />
+   </bean>
+
+   <bean id="awsRegion" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+      <property name="targetClass" value="com.amazonaws.regions.RegionUtils" />
+      <property name="targetMethod" value="getRegion" />
+      <property name="arguments">
+         <list>
+            <value>${aws.region}</value>
+         </list>
+      </property>
+   </bean>
+
+   <bean id="defaultAWSCredentialsProviderChain" class="com.amazonaws.auth.DefaultAWSCredentialsProviderChain" />
+
+   <bean name="s3Client" class="com.amazonaws.services.s3.AmazonS3Client">
+      <constructor-arg ref="defaultAWSCredentialsProviderChain" />
+      <property name="region" ref="awsRegion" />
+   </bean>
+
+   <bean id="errorHandler" class="org.apache.camel.builder.DeadLetterChannelBuilder">
+      <property name="deadLetterUri" value="direct:dlq" />
+      <property name="redeliveryPolicy" ref="MQRedeliveryPolicyConfig" />
+   </bean>
+
+  <camelContext xmlns="http://camel.apache.org/schema/spring" id="awsDLQ">
+
+  <camel:route id="dlq">
+        <camel:from uri="direct:dlq" />
+        <camel:setHeader headerName="${type:org.apache.camel.component.aws.s3.S3Constants.KEY}">
+          <camel:simple>${header.JMSMessageID}</camel:simple>
+        </camel:setHeader>
+        <camel:log logName="FailedDelivery" loggingLevel="ERROR" message="${headers.JMSMessageID} ${exception.stacktrace}" />
+        <camel:to uri="aws-s3://{{env:S3_DEADLETTER}}?amazonS3Client=#s3Client&amp;fileName={header.JMSMessageID}" />
+      </camel:route>
+  </camelContext>
+
+   <bean id="MQRedeliveryPolicyConfig" class="org.apache.camel.processor.RedeliveryPolicy">
+      <property name="maximumRedeliveries" value="2" />
+      <property name="redeliveryDelay" value="250" />
+   </bean>
+
+  <beans profile="MQConsumer,MQProducer">
+    <bean id="amazonMQ" class="org.apache.activemq.camel.component.ActiveMQComponent">
+        <property name="connectionFactory">
+          <bean class="org.apache.activemq.pool.PooledConnectionFactory" init-method="start" destroy-method="stop">
+              <property name="maxConnections" value="6" />
+              <property name="connectionFactory">
+                <bean class="org.apache.activemq.ActiveMQConnectionFactory">
+                    <property name="brokerURL" value="${AMAZONMQ_BROKER_URL}" />
+                    <property name="userName" value="${AMAZONMQ_USERNAME}" />
+                    <property name="password" value="${AMAZONMQ_PASSWORD}" />
+                </bean>
+              </property>
+          </bean>
+        </property>
+    </bean>
+
+    <camelContext xmlns="http://camel.apache.org/schema/spring">
+      <route id="amazonMQ-to-websphereMQ" errorHandlerRef="errorHandler" autoStartup="{{env:AMAZONMQ_RESPONSE_ROUTE_ENABLED}}">
+        <description>Camel Route from amazonMQ to websphereMQ</description>
+        <from uri="amazonMQ:{{env:AMAZONMQ_RESPONSE_QUEUE}}?concurrentConsumers=5" />
+        <inOnly uri="ibmMQ:{{env:IBMMQ_RESPONSE_QUEUE}}?preserveMessageQos=true&amp;concurrentConsumers=5" />
+      </route>
+
+      <route id="websphereMQ-to-amazonMQ" errorHandlerRef="errorHandler" autoStartup="{{env:AMAZONMQ_REQUEST_ROUTE_ENABLED}}">
+        <description>Camel Route from websphereMQ to amazonMQ</description>
+        <from uri="ibmMQ:{{env:IBMMQ_REQUEST_QUEUE}}?preserveMessageQos=true&amp;concurrentConsumers=5" />
+        <inOnly uri="amazonMQ:{{env:AMAZONMQ_REQUEST_QUEUE}}?preserveMessageQos=true" />
+      </route>
+    </camelContext>
+
+  </beans>
+
+  <beans profile="SNSProducer">
+
+    <bean name="snsClient" class="com.amazonaws.services.sns.AmazonSNSClient">
+      <constructor-arg ref="defaultAWSCredentialsProviderChain" />
+      <property name="region" ref="awsRegion" />
+    </bean>
+
+   <bean name="snsExtendedClientConfiguration" class="software.amazon.sns.SNSExtendedClientConfiguration">
+      <property name="alwaysThroughS3" value="true" />
+   </bean>
+
+   <bean id="setKMSKeyforSNS" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+      <property name="targetObject" ref="snsExtendedClientConfiguration" />
+      <property name="targetMethod">
+         <value>withSSEAwsKeyManagementParams</value>
+      </property>
+      <property name="arguments">
+         <list>
+            <bean id="data" class="com.amazonaws.services.s3.model.SSEAwsKeyManagementParams">
+               <constructor-arg name="awsKmsKeyId">
+                  <value type="java.lang.String">${KMS_KEY_ARN}</value>
+               </constructor-arg>
+            </bean>
+         </list>
+      </property>
+    </bean>
+
+    <bean name="snsExtendedClient" class="software.amazon.sns.AmazonSNSExtendedClient">
+          <constructor-arg name="snsClient" ref="snsClient" />
+          <constructor-arg name="snsExtendedClientConfiguration">
+            <bean id="data" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+                <property name="targetObject" ref="snsExtendedClientConfiguration" />
+                <property name="targetMethod">
+                  <value>withPayloadSupportEnabled</value>
+                </property>
+                <property name="arguments">
+                  <list>
+                      <ref bean="s3Client" />
+                      <value type="java.lang.String">${SNS_PAYLOAD}</value>
+                  </list>
+                </property>
+            </bean>
+          </constructor-arg>
+      </bean>
+
+    <camelContext xmlns="http://camel.apache.org/schema/spring">
+      <route id="websphereMQ-to-sns" errorHandlerRef="errorHandler" autoStartup="{{env:SNS_REQUEST_ROUTE_ENABLED}}">
+        <description>Camel Route from websphereMQ to SNS</description>
+        <from uri="ibmMQ:{{env:IBMMQ_REQUEST_QUEUE}}?preserveMessageQos=true&amp;concurrentConsumers=5" />
+        <inOnly uri="aws-sns:{{env:SNS_TARGET_ARN}}?amazonSNSClient=#snsExtendedClient" />
+      </route>
+    </camelContext>
+  </beans>
+
+  <beans profile="SQSProducer,SQSConsumer">
+
+    <bean name="sqsClient" class="com.amazonaws.services.sqs.AmazonSQSClient">
+      <constructor-arg ref="defaultAWSCredentialsProviderChain" />
+      <property name="region" ref="awsRegion" />
+    </bean>
+
+    <bean name="sqsExtendedClientConfiguration" class="com.amazon.sqs.javamessaging.ExtendedClientConfiguration" />
+
+  </beans>
+
+  <beans profile="SQSProducer">
+    <bean id="setKMSKeyforSQS" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+      <property name="targetObject" ref="sqsExtendedClientConfiguration" />
+      <property name="targetMethod">
+         <value>withSSEAwsKeyManagementParams</value>
+      </property>
+      <property name="arguments">
+         <list>
+            <bean id="data" class="com.amazonaws.services.s3.model.SSEAwsKeyManagementParams">
+               <constructor-arg name="awsKmsKeyId">
+                  <value type="java.lang.String">${KMS_KEY_ARN}</value>
+               </constructor-arg>
+            </bean>
+         </list>
+      </property>
+    </bean>
+
+    <bean name="sqsExtendedProducerClient" class="com.amazon.sqs.javamessaging.AmazonSQSExtendedClient">
+        <constructor-arg name="sqsClient" ref="sqsClient" />
+        <constructor-arg name="extendedClientConfig">
+          <bean id="data" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+              <property name="targetObject" ref="sqsExtendedClientConfiguration" />
+              <property name="targetMethod">
+                <value>withPayloadSupportEnabled</value>
+              </property>
+              <property name="arguments">
+                <list>
+                    <ref bean="s3Client" />
+                    <value type="java.lang.String">${SQS_REQUEST_PAYLOAD}</value>
+                </list>
+              </property>
+          </bean>
+        </constructor-arg>
+    </bean>
+
+    <camelContext xmlns="http://camel.apache.org/schema/spring">
+      <route id="websphereMQ-to-sqs" errorHandlerRef="errorHandler" autoStartup="{{env:SQS_REQUEST_ROUTE_ENABLED}}">
+        <description>Camel Route from websphereMQ to SNS</description>
+        <from uri="ibmMQ:{{env:IBMMQ_REQUEST_QUEUE}}?preserveMessageQos=true&amp;concurrentConsumers=5" />
+        <inOnly uri="aws-sqs:{{env:SQS_REQUEST_QUEUE_ARN}}?amazonSQSClient=#sqsExtendedProducerClient" />
+      </route>
+    </camelContext>
+
+  </beans>
+
+  <beans profile="SQSConsumer">
+   <bean name="sqsExtendedConsumerClient" class="com.amazon.sqs.javamessaging.AmazonSQSExtendedClient">
+      <constructor-arg name="sqsClient" ref="sqsClient" />
+      <constructor-arg name="extendedClientConfig">
+         <bean id="data" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+            <property name="targetObject" ref="sqsExtendedClientConfiguration" />
+            <property name="targetMethod">
+               <value>withPayloadSupportEnabled</value>
+            </property>
+            <property name="arguments">
+               <list>
+                  <ref bean="s3Client" />
+                  <value type="java.lang.String">${SQS_RESPONSE_PAYLOAD}</value>
+               </list>
+            </property>
+         </bean>
+      </constructor-arg>
+   </bean>
+
+    <camelContext xmlns="http://camel.apache.org/schema/spring">
+      <route id="sqs-to-websphereMQ" errorHandlerRef="errorHandler" autoStartup="{{env:SQS_RESPONSE_ROUTE_ENABLED}}">
+        <description>Camel Route from amazonMQ to websphereMQ</description>
+        <from uri="aws-sqs:{{env:SQS_RESPONSE_QUEUE_ARN}}?amazonSQSClient=#sqsExtendedConsumerClient" />
+        <inOnly uri="ibmMQ:{{env:IBMMQ_RESPONSE_QUEUE}}?preserveMessageQos=true&amp;concurrentConsumers=5" />
+      </route>
+    </camelContext>
+   </beans>
+</beans>

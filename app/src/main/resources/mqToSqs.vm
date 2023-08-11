@@ -1,0 +1,1 @@
+{"AwsSqsMessageId": "${headers.CamelAwsSqsMessageId}", "MessageBody": "${body}"}

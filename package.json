@@ -1,0 +1,34 @@
+{
+  "name": "@awssamples/mq-adapter",
+  "version": "0.1.0",
+  "scripts": {
+    "audit": "npx better-npm-audit audit --level=high --registry='https://registry.npmjs.org/'",
+    "build": "mvn package -f app/pom.xml && mvn package -f test/integration/pom.xml",
+    "build:js": "tsc && tsc --build --clean && npm run audit",
+    "cdk": "npx aws-cdk@2.88.0",
+    "lint": "npx eslint . --ext .ts --max-warnings 0",
+    "lint-fix": "npx eslint . --ext .ts --fix",
+    "test": "jest",
+    "test:coverage": "rm -rf coverage && jest --coverage",
+    "test:verbose": "jest --verbose"
+  },
+  "dependencies": {
+    "aws-cdk": "2.88.0",
+    "aws-cdk-lib": "2.88.0",
+    "constructs": "^10.0.94",
+    "source-map-support": "^0.5.20"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "5.26.0",
+    "@typescript-eslint/parser": "5.26.0",
+    "eslint": "8.16.0",
+    "eslint-plugin-import": "2.26.0",
+    "@jest/globals": "^26.0.1",
+    "@types/jest": "^25.2.1",
+    "@types/node": "^16.10.2",
+    "jest": "^26.0.1",
+    "ts-jest": "^26.0.1",
+    "ts-node": "^10.2.1",
+    "typescript": "~4.4.3"
+  }
+}

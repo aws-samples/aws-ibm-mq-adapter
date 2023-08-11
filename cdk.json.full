@@ -1,0 +1,76 @@
+{
+  "app": "npx ts-node bin/mq-adapter.ts",
+  "toolkitStackName": "CDKToolkit-mq",
+  "context": {
+    "aws-cdk:enableDiffNoFail": "true",
+    "@aws-cdk/core:bootstrapQualifier": "mq",
+    "stages": {
+      "dev": {
+        "accountId": "123456789012",
+        "region": "eu-west-1",
+        "defaultVpcId": "vpc-0123456789abcdef",
+        "hostedZone": "dns-hosted-zone-afqn",
+        "mock": {
+          "IBM_MOCK_PUBLIC_CERT_ARN": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:mqAdapterIbmMockPublicCert-ODm8lp",
+          "IBM_MOCK_PRIVATE_CERT_ARN": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:mqAdapterIbmMockPrivateCert-b1BtZ3",
+          "IBM_MOCK_CLIENT_PUBLIC_CERT_ARN": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:mqAdapterIbmMockClientPublicCert-JgRLYF"
+        },
+        "environments": {
+          "dev-1": {
+            "allowedPrincipals": [
+              "arn:aws:iam::123456789012:root"
+            ],
+            "envs": {
+              "IBM_HOSTNAME": "SPECIFIED_BY_MOCK",
+              "IBMMQ_QUEUE_MANAGER": "QM1",
+              "IBMMQ_CHANNEL": "DEV.APP.SVRCONN",
+              "IBMMQ_REQUEST_QUEUE": "DEV.QUEUE.1",
+              "IBMMQ_RESPONSE_QUEUE": "DEV.QUEUE.2",
+              "IBMMQ_TRUSTSTORE_ARN": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:mqAdapterTrustStore-dev",
+              "IBMMQ_TRUSTSTORE_PASSWORD_ARN": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:mqAdapterTrustStorePass-dev",
+              "IBMMQ_KEYSTORE_ARN": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:mqAdapterKeyStore-dev",
+              "IBMMQ_KEYSTORE_PASSWORD_ARN": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:mqAdapterKeyStorePass-dev",
+              "AMAZONMQ_REQUEST_ROUTE_ENABLED": "true",
+              "AMAZONMQ_RESPONSE_ROUTE_ENABLED": "true",
+              "AMAZONMQ_REQUEST_QUEUE": "DEV.QUEUE.1",
+              "AMAZONMQ_RESPONSE_QUEUE": "DEV.QUEUE.2",
+              "AMAZONMQ_CONSUMER_USERNAME": "dev-1"
+            }
+          },
+          "dev-2": {
+            "allowedPrincipals": [
+              "arn:aws:iam::123456789012:root"
+            ],
+            "envs": {
+              "IBM_HOSTNAME": "SPECIFIED_BY_MOCK",
+              "IBMMQ_QUEUE_MANAGER": "QM1",
+              "IBMMQ_CHANNEL": "DEV.APP.SVRCONN",
+              "IBMMQ_REQUEST_QUEUE": "DEV.QUEUE.3",
+              "IBMMQ_TRUSTSTORE_ARN": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:mqAdapterTrustStore-dev",
+              "IBMMQ_TRUSTSTORE_PASSWORD_ARN": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:mqAdapterTrustStorePass-dev",
+              "IBMMQ_KEYSTORE_ARN": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:mqAdapterKeyStore-dev",
+              "IBMMQ_KEYSTORE_PASSWORD_ARN": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:mqAdapterKeyStorePass-dev",
+              "SNS_REQUEST_ROUTE_ENABLED": "true"
+            }
+          },
+          "dev-3": {
+            "allowedPrincipals": [
+              "arn:aws:iam::123456789012:root"
+            ],
+            "envs": {
+              "IBM_HOSTNAME": "SPECIFIED_BY_MOCK",
+              "IBMMQ_QUEUE_MANAGER": "QM1",
+              "IBMMQ_CHANNEL": "DEV.APP.SVRCONN",
+              "IBMMQ_RESPONSE_QUEUE": "DEV.QUEUE.4",
+              "IBMMQ_TRUSTSTORE_ARN": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:mqAdapterTrustStore-dev",
+              "IBMMQ_TRUSTSTORE_PASSWORD_ARN": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:mqAdapterTrustStorePass-dev",
+              "IBMMQ_KEYSTORE_ARN": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:mqAdapterKeyStore-dev",
+              "IBMMQ_KEYSTORE_PASSWORD_ARN": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:mqAdapterKeyStorePass-dev",
+              "SQS_RESPONSE_ROUTE_ENABLED": "true"
+            }
+          }
+        }
+      }
+    }
+  }
+}

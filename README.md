@@ -75,6 +75,8 @@ cd app
 ```
 *IMPORTANT*: Update `cdk.json` with the "ARN" from the commands above.
 
+*Note*: When running production, before running the scriptssetup the following environment variables `TARGET_KEYSTORE_PASS` and `TARGET_TRUSTSTORE_PASS` to random secure values before running the scripts for production.
+
 You can skip last command if you're not deploying an IBM MQ Fargate mock (for example in a production enviroments).
 
 #### (Optional) Updating secrets
@@ -177,7 +179,7 @@ You need to setup the following environment variables for it to work:
 
 You can then log in to the console over `https://127.0.0.1:8162/` or `https://127.0.0.1:9443/` (if connecting to mock). For more information abut port forwarding: https://aws.amazon.com/de/blogs/mt/amazon-ec2-instance-port-forwarding-with-aws-systems-manager/.
 
-You can login to the MQ Manager console `https://localhost:9443/admin` with default IBM password (`admin/passw0rd`). 
+You can login to the MQ Manager console `https://localhost:9443/admin` with password stored under `mqAdapterIbmMockAdminPassword`. 
 
 Login to Amazon MQ console (`https://localhost:8162`) with `camel` user name and the password stored in AWS Secrets Manager under `amazonMQPassword`. 
 
@@ -192,7 +194,7 @@ YOu can also run camel from console or IDE using maven with following command li
 
 Check Camel app's README.md to see the variables you need to configure.
 
-## How to run integration tests
+## How to test
 
 ### When integrating to AmazonMQ
 
@@ -245,6 +247,10 @@ This enables you to integrate different IBM MQ clusters and use separate credent
 * Where can I find an example `cdk.json` for Amazon MQ configuration? 
 
 You can find the full examples to enable all Amazon SQS, SNS and MQ under `cdk.json.full`. 
+
+* Where can I find `Apache Camel`'s routes? 
+
+Camel routes are configured in `app/src/main/resources/camel-context.xml` file.
 
 ## Security
 

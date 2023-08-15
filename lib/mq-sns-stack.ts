@@ -36,8 +36,9 @@ export class SNSIntegrationStack extends Stack {
       removalPolicy,
     });
 
-    // Encryption not enabled, metadata only
-    this.topic = new aws_sns.Topic(this, 'mqSNSTarget');
+    this.topic = new aws_sns.Topic(this, 'mqSNSTarget', {
+      masterKey: this.kmsKey,
+    });
 
     this.setupConsumerGrants(props);
 
@@ -49,7 +50,7 @@ export class SNSIntegrationStack extends Stack {
         encryption: aws_sqs.QueueEncryption.KMS,
         encryptionMasterKey: this.kmsKey,
       });
-      this.topic.addSubscription(new aws_sns_subscriptions.SqsSubscription(this.queue));
+      this.topic.addSubscription(new aws_sns_subscriptions.SqsSubscription(this.queue, { rawMessageDelivery: true }));
     }
   }
 

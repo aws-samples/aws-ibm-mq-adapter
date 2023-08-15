@@ -52,7 +52,7 @@
       <property name="targetMethod" value="getRegion" />
       <property name="arguments">
          <list>
-            <value>${aws.region}</value>
+            <value>${AWS_REGION}</value>
          </list>
       </property>
    </bean>
@@ -126,7 +126,7 @@
     </bean>
 
    <bean name="snsExtendedClientConfiguration" class="software.amazon.sns.SNSExtendedClientConfiguration">
-      <property name="alwaysThroughS3" value="true" />
+      <property name="alwaysThroughS3" value="${aws.snsAlwaysThroughS3}" />
    </bean>
 
    <bean id="setKMSKeyforSNS" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">

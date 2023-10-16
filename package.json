@@ -1,6 +1,6 @@
 {
   "name": "@awssamples/mq-adapter",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "scripts": {
     "audit": "npx better-npm-audit audit --level=high --registry='https://registry.npmjs.org/'",
     "build": "mvn package -f app/pom.xml",

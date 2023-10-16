@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "scripts": {
     "audit": "npx better-npm-audit audit --level=high --registry='https://registry.npmjs.org/'",
-    "build": "mvn package -f app/pom.xml && mvn package -f test/integration/pom.xml",
+    "build": "mvn package -f app/pom.xml",
     "build:js": "tsc && tsc --build --clean && npm run audit",
     "cdk": "npx aws-cdk@2.88.0",
     "lint": "npx eslint . --ext .ts --max-warnings 0",

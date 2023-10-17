@@ -99,7 +99,7 @@ cd app
 "dev": {
       "accountId": "0123456788912",
       "region": "eu-west-1",
-      "defaultVpcId": "vpc-0254abcde", // VPC used to deploy service
+      "defaultVpcId": "vpc-0254abcde", // VPC used to deploy service (needs to have both private and public subnets)
       "hostedZone": "fqdn-zone", // Optional: Route53 Zone (Public and Private) used for Amazon MQ integration
       "mock": { // secrets from step 2 
         "IBM_MOCK_PUBLIC_CERT_ARN": "arn:aws:secretsmanager:eu-west-1:0123456788912:secret:mqAdapterIbmMockPublicCert-wDwzCu",
@@ -233,6 +233,7 @@ Check Camel app's README.md to see the variables you need to configure.
 ## Limitations
 
 * IBM MQ only supports mutual TLS authentication.
+* IBM MQ docker does not support M1 [Link](https://integration-development.ideas.ibm.com/ideas/MESNS-I-369). Recommend a Cloud9 environment to deploy in that case.
 
 ## FAQ
 

@@ -21,7 +21,7 @@ RUN mkdir -p /usr/app && chown -R appuser:appuser /usr/app
 
 USER appuser
 
-RUN pip install awscli --upgrade --user
+RUN pip install awscli --upgrade --user --no-build-isolation
 
 COPY --from=build /usr/src/app/target/mq-adapter-*.jar /usr/app/app.jar
 
